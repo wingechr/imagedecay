@@ -68,7 +68,7 @@ for each iteration.
 Running this a few times renders this nice sequence:
 
 
-![](docs/_static/example/samj.jpg.000000.png width="40%")
+![img0](docs/_static/example/samj.jpg.000000.png width="40%")
 
 
    
