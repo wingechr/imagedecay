@@ -2,8 +2,7 @@ Appendix
 ========
 
 .. toctree::
-   :maxdepth: 99   
-   :hidden:
+   :maxdepth: 99      
       
    requirements
    license   

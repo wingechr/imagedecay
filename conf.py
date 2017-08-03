@@ -35,7 +35,7 @@ html_logo = os.path.join(docs_path, '_static/logo.svg')
 html_favicon = os.path.join(docs_path, '_static/favicon.ico')
 templates_path = [os.path.join(docs_path, '_templates')]
 exclude_dirs = []
-nitpicky = True
+nitpicky = False
 html_use_index = True
 add_function_parentheses = True
 html_static_path = [os.path.join(docs_path, '_static')]
@@ -70,7 +70,8 @@ nitpick_ignore = [
     ('py:obj', 'int'),
     ('py:obj', 'str'),
     ('py:obj', 'bool'),
-    ('py:obj', 'optional')
+    ('py:obj', 'optional'),
+    ('py:obj', 'array')
 ]
 
 # mathjax path realtiv to _static

@@ -1,0 +1,30 @@
+[
+{
+    "name": "noise",
+    "kwargs": {
+        "min": 0.0,
+        "max": 0.1
+    }
+},
+{
+    "name": "gaussian",
+    "kwargs": {
+        "sigma": 0.4
+    }
+},
+{
+    "name": "colordepth",
+    "kwargs": {
+        "n_colors": 5
+    }
+},
+{
+    "name": "random_offset",
+    "kwargs": {
+        "alpha": 0.2,
+        "dx": 0.02,
+        "dy": 0.03
+    }
+}
+
+]

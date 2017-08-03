@@ -3,9 +3,10 @@ Start
 
 .. toctree::
    :maxdepth: 99   
-   :hidden:
+   
    
    _toc/readme
+   example
    _toc/appendix
    
    
