@@ -20,7 +20,7 @@ Example
 
 We use this image
 
-<img src="docs/_static/example/samj.jpg width="80%">
+<img src="docs/_static/example/samj.jpg" width="80%">
    
 and this config file:
 
