@@ -14,3 +14,5 @@ Introduction
 * The config file is a simple json file with a list of filters that are applied at each iteration.
 * Each filter has a ``name`` and a number of keyword arguments ``kwargs`` that are specific to that filter
 * The number of iterations and how many intermeddiate files will be saved can be specified as command line arguments
+
+![](docs/_static/example/samj.jpg "Example")
