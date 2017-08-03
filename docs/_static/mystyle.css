@@ -1,0 +1,13 @@
+.wy-nav-top, .wy-side-nav-search{    
+    background-color: rgb(142, 180, 22);    
+}
+.wy-side-nav-search input[type="text"] {    
+    border-color: rgb(142, 180, 22);    
+}
+
+.rst-content table.docutils th {
+    border-left: 1px solid #e1e4e5 !important; /* fix ugly border in table headers */
+}
+.rst-content table.docutils td {
+    border-left: 1px solid #e1e4e5 !important; /* fix ugly border in table headers */
+}
