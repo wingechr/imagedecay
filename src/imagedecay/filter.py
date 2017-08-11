@@ -19,12 +19,11 @@ def get_conf(filepath, encoding='utf-8'):
         filter configuration object.
     """
     if not filepath:
-        logging.warning('No filter.')
+        logging.warning('FILTER No filter.')
         return []
-    logging.debug('Read configuration from: ' + filepath)
+    logging.debug('FILTER Read configuration from: ' + filepath)
     with open(filepath, 'r', encoding=encoding) as f:
         data = json.load(f)
-
     return data
 
 

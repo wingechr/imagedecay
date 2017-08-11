@@ -6,53 +6,86 @@
 import logging
 import configargparse
 import sys
-from imagedecay.readwrite import read, write
-from imagedecay.filter import get_conf, apply_filterconf
+from imagedecay.filter import get_conf
+from imagedecay.scanner import Scanner
+from imagedecay.display import Display
+from imagedecay.converter import Converter
+from queue import Queue
+import time
+import os
 
 DEFAULT_LOGLEVEL = 'DEBUG'
 
 CMD_ARGS = [  # list of pairs of (args_tuple, kwargs_dict)
-    (['filepath'], {
-        'help': 'filepath to image to process'
+    (['image_dir'], {
+        'help': 'path to scan for new images'
     }),
-    (['--filterconf'], {
+    (['temp_image_dir'], {
+        'help': 'path for converted images. must be different from image_dir!',
+        'type': str
+    }),
+    (['--filterconf', '-f'], {
         'help': 'path to filter configuration file',
     })
     ,
-    (['--iter'], {
+    (['--iter', '-n'], {
         'help': 'number of iterations',
         'default': 1,
         'type': int
     }),
-    (['--save_steps'], {
+    (['--save_steps', '-m'], {
         'help': 'save every n steps',
         'default': 0,
         'type': int
+    }),
+    (['--scan_inverval_s', '-s'], {
+        'help': 'scan interval in s',
+        'default': 0.5,
+        'type': float
+    }),
+    (['--display_inverval_s', '-d'], {
+        'help': 'display interval in s',
+        'default': 1.5,
+        'type': float
+    }),
+    (['--file_pattern', '-p'], {
+        'help': 'scan file pattern',
+        'default': '^.*\.(jpg|png)$',
+        'type': str
     })
 ]
 
 
-def _get_output_filename(filepath, i):
-    return '%s.%06d.png' % (filepath, i)
-
 
 def main(**kwargs):
-    # load filter config
-    conf = get_conf(kwargs['filterconf'])
-    # load image
-    im_array, meta = read(kwargs['filepath'])
-    # save original
-    write(im_array, _get_output_filename(kwargs['filepath'], 0))
+    image_dir = kwargs['image_dir']
+    temp_image_dir = kwargs['temp_image_dir']
+    assert(image_dir != temp_image_dir)
+    assert(os.path.exists(image_dir))
+    assert(os.path.exists(temp_image_dir))
 
-    n = kwargs['iter']
-    s = kwargs['save_steps']
-    for i in range(1, n + 1):
-        logging.debug('STEP % 5d' % i)
-        # apply filter
-        im_array = apply_filterconf(im_array, conf)
-        # save
-        if i == n or (s and i % s == 0):
-            write(im_array, _get_output_filename(kwargs['filepath'], i))
+    queue_in = Queue()
+    queue_out = Queue()
+    conf = get_conf(kwargs['filterconf'])
+
+    scanner = Scanner(queue=queue_in, path=image_dir, interval_s=kwargs['scan_inverval_s'], file_pattern=kwargs['file_pattern'])
+    display = Display(queue=queue_out, interval_s=kwargs['display_inverval_s'])
+    converter = Converter(queue_in=queue_in, queue_out=queue_out, path=temp_image_dir, conf=conf, n_iter=kwargs['iter'], save_steps=kwargs['save_steps'])
+    display.start()
+    converter.start()
+    scanner.start()
+
+    try:
+        time.sleep(10)
+    except:
+        pass
+
+    scanner.stop()
+    converter.stop()
+    display.stop()
+
+
+
 
 
 def on_error(**kwargs):

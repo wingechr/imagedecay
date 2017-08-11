@@ -17,7 +17,7 @@ def read(filepath):
     Returns:
         image array as float, metadata dict
     """
-    logging.debug('Read image data from ' + filepath)
+    logging.debug('READ image data from ' + filepath)
 
     im_array = skimage.io.imread(filepath)
     im_array = convert_to_float(im_array)
@@ -29,7 +29,7 @@ def read(filepath):
         "dtype": str(im_array.dtype),
         "shape": im_array.shape
     }
-    logging.debug('Image metadata: ' + str(im_meta))
+    logging.debug('READ Image metadata: ' + str(im_meta))
 
     return im_array, im_meta
 
@@ -40,7 +40,7 @@ def write(im_array, filepath):
         im_array (array): image data as float
         filepath (str): path to image file
     """
-    logging.debug('Saving image data to ' + filepath)
+    logging.debug('SAVE image data to ' + filepath)
     im_array = convert_to_int(im_array, clip=True)
     skimage.io.imsave(filepath, im_array)
 
@@ -62,7 +62,7 @@ def remove_alpha(im_array, bg_color_float=BG_COLOR_FLOAT):
 
     n_channels = 1 if len(im_array.shape) == 2 else im_array.shape[2]
     if n_channels not in (2, 4):
-        logging.warning('Image does not seem to have transparency.')
+        #logging.warning('Image does not seem to have transparency.')
         return im_array
 
     # separate alpha
@@ -82,7 +82,7 @@ def convert_from_greyscale(im_array):
 
     n_channels = 1 if len(im_array.shape) == 2 else im_array.shape[2]
     if n_channels != 1:
-        logging.warning('Image does not seem to be greyscale.')
+        #logging.warning('Image does not seem to be greyscale.')
         return im_array
 
     im_array = skimage.color.grey2rgb(im_array, alpha=None)
