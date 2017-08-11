@@ -69,7 +69,8 @@ class Window():
 
         icon_size = 128
         icon_file = 'icon%d.png' % icon_size
-        icon_image = pyg.image.load(icon_file)
+        icon_path = os.path.join(os.path.dirname(sys.argv[0]), icon_file)
+        icon_image = pyg.image.load(icon_path)
         pyg.display.set_caption("imagedecay")
         pyg.display.set_icon(icon_image)
 
