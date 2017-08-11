@@ -10,6 +10,7 @@ import numpy as np
 
 BG_COLOR_FLOAT = 1.0
 
+
 def read(filepath):
     """
     Args:
@@ -64,7 +65,6 @@ def remove_alpha(im_array, bg_color_float=BG_COLOR_FLOAT):
     if n_channels not in (2, 4):
         #logging.warning('Image does not seem to have transparency.')
         return im_array
-
     # separate alpha
     alpha = im_array[:, :, (n_channels - 1)]
     im_array = im_array[:, :, :-1]
@@ -79,7 +79,6 @@ def remove_alpha(im_array, bg_color_float=BG_COLOR_FLOAT):
 def convert_from_greyscale(im_array):
     if 'float' not in str(im_array.dtype):
         raise Exception('dtype must by float')
-
     n_channels = 1 if len(im_array.shape) == 2 else im_array.shape[2]
     if n_channels != 1:
         #logging.warning('Image does not seem to be greyscale.')

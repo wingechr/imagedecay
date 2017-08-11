@@ -21,7 +21,6 @@ class Scanner(Thread):
         self.interval_s = float(interval_s)
         self.file_pattern = re.compile(file_pattern, re.IGNORECASE)
         self.running = False
-        #self.thread = Thread(target=self.run, daemon=False)
         self.files = set()
 
     def run(self):
@@ -36,6 +35,7 @@ class Scanner(Thread):
                 new_files_by_mtime = [(os.path.getmtime(f), f) for f in new_files_with_path]
                 latest = sorted(new_files_by_mtime, reverse=True)[0][1]
                 logging.debug('SCAN queue new file %s' % latest)
+                # put only the latest file into the queue
                 self.queue.put(latest)
                 self.files = self.files | new_files
             time.sleep(self.interval_s)

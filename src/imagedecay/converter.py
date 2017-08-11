@@ -27,21 +27,18 @@ class Converter(Thread):
     def run(self):
         logging.debug("CONV started")
         while self.running:
+            # wait on queue for next input
             filepath = self.queue_in.get()
             if filepath is None:
                 break
-
             logging.debug("CONV new img: %s" % type(filepath))
-
             # load image
             im_array, meta = read(filepath)
             imagelist = list()
-
             # save original
             filepath_out = self.get_output_filename(filepath, 0)
-            write(im_array,filepath_out)
+            write(im_array, filepath_out)
             imagelist.append(filepath_out)
-
             for i in range(1, self.n_iter + 1):
                 logging.debug('STEP % 5d' % i)
                 # apply filter
@@ -49,7 +46,7 @@ class Converter(Thread):
                 # save
                 if i == self.n_iter or (self.save_steps and i % self.save_steps == 0):
                     filepath_out = self.get_output_filename(filepath, i)
-                    write(im_array,filepath_out)
+                    write(im_array, filepath_out)
                     imagelist.append(filepath_out)
             if imagelist:
                 imagelist = tuple(imagelist)
@@ -60,7 +57,7 @@ class Converter(Thread):
 
     def start(self):
         """
-        Start scan process in new thread
+        Start conversion process in new thread
         """
         self.running = True
         super().start()

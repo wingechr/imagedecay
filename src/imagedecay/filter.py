@@ -3,12 +3,12 @@
 """
 
 import json
-import os
 import sys
 import logging
 import numpy as np
 import scipy.ndimage.filters
 import random
+
 
 def get_conf(filepath, encoding='utf-8'):
     """
@@ -33,6 +33,7 @@ def _get_filter_by_name(name):
     fun = getattr(this, funname)
     return fun
 
+
 def apply_filterconf(im_array, filterconf):
     for f in filterconf:
         im_array = _apply_filter(im_array, f)
@@ -46,6 +47,7 @@ def _apply_filter(im_array, filter):
     im_array = filter_fun(im_array, **filter_kwargs)
     return im_array
 
+
 def filter_noise(a, min=0.0, max=1.0, gauss_sigma=0.3, **kwargs):
     rnd = np.random.rand(*a.shape)
     rnd = rnd * 2.0 - 1.0
@@ -54,14 +56,13 @@ def filter_noise(a, min=0.0, max=1.0, gauss_sigma=0.3, **kwargs):
         rnd = filter_gaussian(rnd, sigma=gauss_sigma)
     a = a + rnd
     a = a.clip(0.0, 1.0)  # clip
-
-
     return a
 
 
 def filter_colordepth(a, n_colors, **kwargs):
     a = np.round(a * n_colors) / n_colors
     return a
+
 
 def filter_gaussian(a, sigma, **kwargs):
     a = scipy.ndimage.filters.gaussian_filter(a, sigma=sigma, mode='nearest')

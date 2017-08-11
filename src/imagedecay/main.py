@@ -11,10 +11,12 @@ from imagedecay.scanner import Scanner
 from imagedecay.display import Display
 from imagedecay.converter import Converter
 from queue import Queue
-import time
 import os
+import time
+import pygame as pyg
+from pygame.locals import QUIT
 
-DEFAULT_LOGLEVEL = 'DEBUG'
+DEFAULT_LOGLEVEL = 'WARNING'
 
 CMD_ARGS = [  # list of pairs of (args_tuple, kwargs_dict)
     (['image_dir'], {
@@ -55,6 +57,59 @@ CMD_ARGS = [  # list of pairs of (args_tuple, kwargs_dict)
     })
 ]
 
+class Window():
+    def __init__(self, queue_in):
+        self.queue_in = queue_in
+        pyg.init()
+        winf = pyg.display.Info()
+        self.window_width = winf.current_w // 3
+        self.window_height = winf.current_h // 3
+        logging.info('WINDOW INIT %dx%d' % (self.window_width, self.window_height))
+        self.surface = pyg.display.set_mode((self.window_width, self.window_height), pyg.FULLSCREEN) # pyg.NOFRAME +
+
+        icon_size = 128
+        icon_file = 'icon%d.png' % icon_size
+        icon_image = pyg.image.load(icon_file)
+        pyg.display.set_caption("imagedecay")
+        pyg.display.set_icon(icon_image)
+
+    def run(self):
+
+        self.running = True
+        while self.running:
+            try:
+                events = pyg.event.get()
+            except KeyboardInterrupt:
+                self.running = False
+                break
+            except:
+                events = []
+            for e in events:
+                if e.type == pyg.locals.QUIT:
+                    self.running = False
+                    break
+            #pyg.event.pump()
+            try:
+                img = self.queue_in.get_nowait()
+            except:
+                img = None
+            if img:
+                self.display(img)
+        self.running = False
+        pyg.display.quit()
+        logging.debug('WINDOW QUIT')
+
+
+    def display(self, imgpath):
+        logging.debug(imgpath)
+        img = pyg.image.load(imgpath)
+        img_width, img_height = img.get_rect().width, img.get_rect().height
+        img_uppler_left = int((self.window_width - img_width) / 2), int((self.window_height - img_height) / 2)
+        #logging.debug("DISP blit")
+        self.surface.blit(img, img_uppler_left)
+        #logging.debug("DISP flip")
+        pyg.display.flip()
+        #logging.debug("DISP OK")
 
 
 def main(**kwargs):
@@ -64,27 +119,31 @@ def main(**kwargs):
     assert(os.path.exists(image_dir))
     assert(os.path.exists(temp_image_dir))
 
-    queue_in = Queue()
-    queue_out = Queue()
+    queue_scan = Queue()
+    queue_seq = Queue()
+    queue_disp = Queue()
+
     conf = get_conf(kwargs['filterconf'])
 
-    scanner = Scanner(queue=queue_in, path=image_dir, interval_s=kwargs['scan_inverval_s'], file_pattern=kwargs['file_pattern'])
-    display = Display(queue=queue_out, interval_s=kwargs['display_inverval_s'])
-    converter = Converter(queue_in=queue_in, queue_out=queue_out, path=temp_image_dir, conf=conf, n_iter=kwargs['iter'], save_steps=kwargs['save_steps'])
+
+    scanner = Scanner(queue=queue_scan, path=image_dir, interval_s=kwargs['scan_inverval_s'], file_pattern=kwargs['file_pattern'])
+    display = Display(queue_in=queue_seq, queue_out=queue_disp, interval_s=kwargs['display_inverval_s'])
+    converter = Converter(queue_in=queue_scan, queue_out=queue_seq, path=temp_image_dir, conf=conf, n_iter=kwargs['iter'], save_steps=kwargs['save_steps'])
+    window = Window(queue_in=queue_disp)
+
     display.start()
     converter.start()
     scanner.start()
 
+
     try:
-        time.sleep(10)
-    except:
+        window.run()
+    except KeyboardInterrupt:
         pass
-
-    scanner.stop()
-    converter.stop()
-    display.stop()
-
-
+    finally:
+        scanner.stop()
+        converter.stop()
+        display.stop()
 
 
 
@@ -103,10 +162,10 @@ def on_finally(**kwargs):
 if __name__ == '__main__':
     # command line > environment variables > config file values > defaults
     ap = configargparse.ArgParser(
-        default_config_files=[],    # add config files here
-        add_config_file_help=False, # but dont show help about the syntax
-        auto_env_var_prefix=None,   # use environment variables without prefix (None for not using them)
-        add_env_var_help=False      # but dont show help about that either
+        default_config_files=[],     # add config files here
+        add_config_file_help=False,  # but dont show help about the syntax
+        auto_env_var_prefix=None,    # use environment variables without prefix (None for not using them)
+        add_env_var_help=False       # but dont show help about that either
     )
     ap.add('-c', '--config', required=False, is_config_file=True, help='config file path')
     ap.add('--loglevel', '-l', type=str, default=DEFAULT_LOGLEVEL, help='ERROR, WARNING, INFO, or DEBUG')
@@ -122,9 +181,6 @@ if __name__ == '__main__':
                         level=getattr(logging, settings.get('loglevel').upper()))
     logging.debug('ARGUMENTS:\n' + ap.format_values())
 
-    # input output stream as byte stream
-    sys.stdout = sys.stdout.detach()
-    sys.stdin = sys.stdin.detach()
 
     # main wrapper
     rc = 0
