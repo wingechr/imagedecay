@@ -69,7 +69,7 @@ class Window():
         self.window_width = int(winf.current_w * image_screen_ratio)
         self.window_height = int(winf.current_h * image_screen_ratio)
         logging.info('WINDOW INIT (%d x %d) of max (%d x %d)' % (self.window_width, self.window_height, winf.current_w, winf.current_h))
-        self.surface = pyg.display.set_mode((self.window_width, self.window_height), pyg.FULLSCREEN) # pyg.NOFRAME +
+        self.surface = pyg.display.set_mode((self.window_width, self.window_height), pyg.FULLSCREEN + pyg.NOFRAME) # pyg.NOFRAME +
 
         icon_size = 128
         icon_file = 'icon%d.png' % icon_size
