@@ -30,8 +30,8 @@ class Display(Thread):
             while not self.queue_in.empty():
                 self.image_list = self.queue_in.get()
                 self.image_index = -1
-                if self.image_list is None:
-                    break
+                #if self.image_list is None:
+                #    break
                 logging.debug('DISP new list')
             if self.image_list:
                 # show next image from list
@@ -39,7 +39,8 @@ class Display(Thread):
                 image = self.image_list[self.image_index]
                 logging.debug('DISP show %s' % image)
                 self.queue_out.put(image)
-
+            else:
+                self.queue_out.put(None)  # signal to draw black screen
             time.sleep(self.interval_s)
         logging.debug("DISP stopped")
 
