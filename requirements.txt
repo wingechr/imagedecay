@@ -1,5 +1,5 @@
 configargparse
-skimage
+scikit-image
 numpy
 scipy
 opencv
