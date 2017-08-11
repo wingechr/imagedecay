@@ -13,7 +13,7 @@ from imagedecay.converter import Converter
 from queue import Queue
 import os
 import pygame as pyg
-from pygame.locals import QUIT
+from pygame.locals import QUIT, KEYDOWN, K_ESCAPE
 
 DEFAULT_LOGLEVEL = 'WARNING'
 
@@ -85,17 +85,18 @@ class Window():
         self.running = True
         while self.running:
             try:
-                #events = pyg.event.get()
-                pyg.event.get()
+                events = pyg.event.get()
+                #pyg.event.get()
             except KeyboardInterrupt:
                 self.running = False
                 break
-            #except:
-            #   events = []
-            #for e in events:
-            #    if e.type == pyg.locals.QUIT:
-            #        self.running = False
-            #        break
+            except:
+               events = []
+            for e in events:
+                if e.type == QUIT or (e.type == KEYDOWN and e.key == K_ESCAPE):
+                    logging.info('EXIT WINDOW')
+                    self.running = False
+                    break
             try:
                 img = self.queue_in.get_nowait()
             except KeyboardInterrupt:
