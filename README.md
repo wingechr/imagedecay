@@ -46,3 +46,9 @@ TEST
 ====
 
 run ``test.bat`` in folder ``example``
+
+
+TODO
+====
+
+* maybe interrupt conversion sequence if new image arrives?

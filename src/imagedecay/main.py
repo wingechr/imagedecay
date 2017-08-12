@@ -40,7 +40,7 @@ CMD_ARGS = [  # list of pairs of (args_tuple, kwargs_dict)
         'default': 1,
         'type': int
     }),
-    (['--scan_inverval_s', '-s'], {
+    (['--scan_interval_s', '-s'], {
         'help': 'scan interval in s',
         'default': 1.0,
         'type': float
@@ -157,7 +157,7 @@ def main(**kwargs):
     window = Window(queue_in=queue_disp, path=image_dir, image_screen_ratio=kwargs['image_screen_ratio'])
     max_image_size = (window.window_width, window.window_height)
 
-    scanner = Scanner(queue=queue_scan, path=image_dir, interval_s=kwargs['scan_inverval_s'], file_pattern=kwargs['file_pattern'])
+    scanner = Scanner(queue=queue_scan, path=image_dir, interval_s=kwargs['scan_interval_s'], file_pattern=kwargs['file_pattern'])
     display = Display(queue_in=queue_seq, queue_out=queue_disp, interval_s=kwargs['display_inverval_s'])
     converter = Converter(queue_in=queue_scan, queue_out=queue_seq, path=temp_image_dir, conf=conf, n_iter=kwargs['iter'], save_steps=kwargs['save_steps'], max_image_size=max_image_size)
 
