@@ -13,7 +13,8 @@ from imagedecay.converter import Converter
 from queue import Queue
 import os
 import pygame as pyg
-from pygame.locals import QUIT, KEYDOWN, K_ESCAPE
+from pygame import camera
+from pygame.locals import QUIT, KEYDOWN, K_ESCAPE, K_RETURN
 
 DEFAULT_LOGLEVEL = 'WARNING'
 
@@ -56,28 +57,29 @@ CMD_ARGS = [  # list of pairs of (args_tuple, kwargs_dict)
     }),
     (['--file_pattern', '-p'], {
         'help': 'scan file pattern',
-        'default': '^.*\.(jpg|png)$',
+        'default': '^.*\.(jpg|png|jpeg|bmp)$',
         'type': str
     })
 ]
 
 class Window():
-    def __init__(self, queue_in, image_screen_ratio=1.0):
+    def __init__(self, queue_in, path, image_screen_ratio=1.0):
         self.queue_in = queue_in
+        self.path = path
+        self.cam_index = 0
         pyg.init()
         winf = pyg.display.Info()
         self.window_width = int(winf.current_w * image_screen_ratio)
         self.window_height = int(winf.current_h * image_screen_ratio)
         logging.info('WINDOW INIT (%d x %d) of max (%d x %d)' % (self.window_width, self.window_height, winf.current_w, winf.current_h))
         self.surface = pyg.display.set_mode((self.window_width, self.window_height), pyg.FULLSCREEN + pyg.NOFRAME) # pyg.NOFRAME +
-
+        self.last_img = None
         icon_size = 128
         icon_file = 'icon%d.png' % icon_size
         icon_path = os.path.join(os.path.dirname(sys.argv[0]), icon_file)
         icon_image = pyg.image.load(icon_path)
         pyg.display.set_caption("imagedecay")
         pyg.display.set_icon(icon_image)
-
         pyg.mouse.set_visible(False)
 
     def run(self):
@@ -97,6 +99,8 @@ class Window():
                     logging.info('EXIT WINDOW')
                     self.running = False
                     break
+                elif e.type == KEYDOWN and e.key == K_RETURN:
+                    self.take_webcam_picture()
             try:
                 img = self.queue_in.get_nowait()
             except KeyboardInterrupt:
@@ -104,25 +108,38 @@ class Window():
                 break
             except:
                 img = None
-            if img:
+            if img is not None and self.last_img != img:
+                self.last_img = img
                 self.display(img)
-            else:
-                self.clear()
         self.running = False
         pyg.display.quit()
         logging.debug('WINDOW QUIT')
 
     def display(self, imgpath):
-        logging.debug(imgpath)
-        img = pyg.image.load(imgpath)
-        img_width, img_height = img.get_rect().width, img.get_rect().height
-        img_uppler_left = int((self.window_width - img_width) / 2), int((self.window_height - img_height) / 2)
+        logging.debug('DISPLAY %s' % imgpath)
         self.clear()
-        self.surface.blit(img, img_uppler_left)
+        if imgpath:
+            img = pyg.image.load(imgpath)
+            img_width, img_height = img.get_rect().width, img.get_rect().height
+            img_uppler_left = int((self.window_width - img_width) / 2), int((self.window_height - img_height) / 2)
+            self.surface.blit(img, img_uppler_left)
         pyg.display.flip()
 
     def clear(self):
         self.surface.fill((0, 0, 0))
+
+    def take_webcam_picture(self):
+        camera.init()
+        cam = camera.Camera(pyg.camera.list_cameras()[0])
+        cam.start()
+        img = cam.get_image()
+        cam.stop()
+        self.cam_index += 1
+        filepath = os.path.join(self.path, '_campic.%06d.png' % self.cam_index)
+        logging.info('CAMPIC: %s' % filepath)
+        pyg.image.save(img, filepath)
+        camera.quit()
+
 
 def main(**kwargs):
     image_dir = kwargs['image_dir']
@@ -137,7 +154,7 @@ def main(**kwargs):
 
     conf = get_conf(kwargs['filterconf'])
 
-    window = Window(queue_in=queue_disp, image_screen_ratio=kwargs['image_screen_ratio'])
+    window = Window(queue_in=queue_disp, path=image_dir, image_screen_ratio=kwargs['image_screen_ratio'])
     max_image_size = (window.window_width, window.window_height)
 
     scanner = Scanner(queue=queue_scan, path=image_dir, interval_s=kwargs['scan_inverval_s'], file_pattern=kwargs['file_pattern'])

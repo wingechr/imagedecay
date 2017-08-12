@@ -40,12 +40,15 @@ class Converter(Thread):
         while self.running:
             # wait on queue for next input
             filepath = self.queue_in.get()
+            # now iterate until last item:
+            while not self.queue_in.empty():
+                filepath = self.queue_in.get()
             if filepath is None:
                 break
             logging.debug("CONV new img: %s" % type(filepath))
 
             # tell receiver to stop displaying old list
-            self.queue_out.put(None)
+            self.queue_out.put([])
 
             # load image
             im_array, meta = read(filepath)
@@ -70,6 +73,7 @@ class Converter(Thread):
                     if self.publish_steps:
                         self.queue_out.put([filepath_out])
                     imagelist.append(filepath_out)
+            self.link_last_img(filepath_out)
 
             if imagelist:
                 imagelist = tuple(imagelist)
@@ -77,6 +81,13 @@ class Converter(Thread):
                 self.queue_out.put(imagelist)
         self.queue_out.put(None)
         logging.debug("CONV stopped")
+
+    def link_last_img(self, imgpath):
+        if not imgpath:
+            return
+        imgpath = os.path.basename(imgpath)
+
+        pass  # TODO
 
     def start(self):
         """
