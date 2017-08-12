@@ -26,67 +26,71 @@ class Converter(Thread):
         self.max_image_size = max_image_size
         self.output_fmt = output_fmt
         self.publish_steps = publish_steps
+        self.imagelist = list()
 
     def resize(self, img):
         sx = self.max_image_size[0] / img.shape[1]
         sy = self.max_image_size[1] / img.shape[0]
         s = min(sx, sy)
         img2 = rescale(img, s, mode='constant')
-        logging.debug('CONV rescale (%d x %d) - %0.2f -> (%d x %d)' % (img.shape[0], img.shape[1], s, img2.shape[0], img2.shape[1]))
+        logging.info('CONV RESCALE (%d x %d) - %0.2f -> (%d x %d)' % (img.shape[0], img.shape[1], s, img2.shape[0], img2.shape[1]))
         return img2
 
     def run(self):
-        logging.debug("CONV started")
+        logging.info("CONV START")
         while self.running:
             # wait on queue for next input
             filepath = self.queue_in.get()
             # now iterate until last item:
             while not self.queue_in.empty():
+                logging.info("CONV SKIP %s" % filepath)
                 filepath = self.queue_in.get()
             if filepath is None:
                 break
-            logging.debug("CONV new img: %s" % type(filepath))
-
-            # tell receiver to stop displaying old list
+            logging.info("CONV NEW %s" % filepath)
             self.queue_out.put([])
-
             # load image
             im_array, meta = read(filepath)
             # resize image
             im_array = self.resize(im_array)
-            imagelist = list()
+            self.imagelist = list()
             # save original
             filepath_out = self.get_output_filename(filepath, 0)
             write(im_array, filepath_out)
+            self.imagelist.append(filepath_out)
             if self.publish_steps:
-                self.queue_out.put([filepath_out])
-            imagelist.append(filepath_out)
+                logging.info("CONV SHOW %s" % filepath_out)
+                self.queue_out.put(self.imagelist)
             for i in range(1, self.n_iter + 1):
-                logging.debug('STEP % 5d' % i)
+                if not self.queue_in.empty():
+                    logging.info('CONV CANCEL')
+                    continue
+                logging.debug('CONV STEP %5d' % i)
                 # apply filter
                 im_array = apply_filterconf(im_array, self.conf)
                 # save
                 if i == self.n_iter or (self.save_steps and i % self.save_steps == 0):
                     filepath_out = self.get_output_filename(filepath, i)
+                    logging.debug("CONV SAVE %s" % filepath_out)
                     write(im_array, filepath_out)
                     # publish right away
+                    self.imagelist.append(filepath_out)
                     if self.publish_steps:
-                        self.queue_out.put([filepath_out])
-                    imagelist.append(filepath_out)
+                        logging.info("CONV SHOW %s" % filepath_out)
+                        self.queue_out.put(self.imagelist)
+            # publish list if sequence finished
             self.link_last_img(filepath_out)
-
-            if imagelist:
-                imagelist = tuple(imagelist)
-                logging.debug('CONV queueing %d' % len(imagelist))
-                self.queue_out.put(imagelist)
+            if not self.publish_steps:
+                logging.info("CONV SHOW ALL")
+                self.queue_out.put(self.imagelist)
         self.queue_out.put(None)
-        logging.debug("CONV stopped")
+        logging.info("CONV STOP")
 
     def link_last_img(self, imgpath):
         if not imgpath:
             return
+        logging.info("CONV LINK %s" % imgpath)
         imgpath = os.path.basename(imgpath)
-
         pass  # TODO
 
     def start(self):
@@ -103,6 +107,3 @@ class Converter(Thread):
         filename = os.path.basename(filepath)
         path = os.path.join(self.path, '%s.%06d.%s' % (filename, i, self.output_fmt))
         return path
-
-
-

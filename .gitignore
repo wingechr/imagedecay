@@ -103,4 +103,5 @@ ENV/
 # pycharm
 .idea/
 
-example/o/*0*
+example/o/*.bmp
+example/i/*.png

@@ -12,6 +12,7 @@ from imagedecay.display import Display
 from imagedecay.converter import Converter
 from queue import Queue
 import os
+import time
 import pygame as pyg
 from pygame import camera
 from pygame.locals import QUIT, KEYDOWN, K_ESCAPE, K_RETURN
@@ -63,10 +64,10 @@ CMD_ARGS = [  # list of pairs of (args_tuple, kwargs_dict)
 ]
 
 class Window():
-    def __init__(self, queue_in, path, image_screen_ratio=1.0):
-        self.queue_in = queue_in
+    def __init__(self, get_next, path, image_screen_ratio=1.0, interval_s=1.0):
+        self.get_next = get_next
+        self.interval_s = interval_s
         self.path = path
-        self.cam_index = 0
         pyg.init()
         winf = pyg.display.Info()
         self.window_width = int(winf.current_w * image_screen_ratio)
@@ -81,14 +82,13 @@ class Window():
         pyg.display.set_caption("imagedecay")
         pyg.display.set_icon(icon_image)
         pyg.mouse.set_visible(False)
+        self.last_update = time.time()
 
     def run(self):
-
         self.running = True
         while self.running:
             try:
                 events = pyg.event.get()
-                #pyg.event.get()
             except KeyboardInterrupt:
                 self.running = False
                 break
@@ -96,27 +96,21 @@ class Window():
                events = []
             for e in events:
                 if e.type == QUIT or (e.type == KEYDOWN and e.key == K_ESCAPE):
-                    logging.info('EXIT WINDOW')
+                    logging.info('USER QUIT')
                     self.running = False
                     break
                 elif e.type == KEYDOWN and e.key == K_RETURN:
                     self.take_webcam_picture()
-            try:
-                img = self.queue_in.get_nowait()
-            except KeyboardInterrupt:
-                self.running = False
-                break
-            except:
-                img = None
-            if img is not None and self.last_img != img:
-                self.last_img = img
+            t = time.time()
+            if t - self.last_update > self.interval_s:
+                img = self.get_next()
+                self.last_update = t
                 self.display(img)
-        self.running = False
         pyg.display.quit()
         logging.debug('WINDOW QUIT')
 
     def display(self, imgpath):
-        logging.debug('DISPLAY %s' % imgpath)
+        logging.debug('WINDOW SHOW %s' % imgpath)
         self.clear()
         if imgpath:
             img = pyg.image.load(imgpath)
@@ -134,8 +128,8 @@ class Window():
         cam.start()
         img = cam.get_image()
         cam.stop()
-        self.cam_index += 1
-        filepath = os.path.join(self.path, '_campic.%06d.png' % self.cam_index)
+        cam_index = int(time.time()*1000)
+        filepath = os.path.join(self.path, '_campic.%s.png' % cam_index)
         logging.info('CAMPIC: %s' % filepath)
         pyg.image.save(img, filepath)
         camera.quit()
@@ -150,15 +144,15 @@ def main(**kwargs):
 
     queue_scan = Queue()
     queue_seq = Queue()
-    queue_disp = Queue()
 
     conf = get_conf(kwargs['filterconf'])
 
-    window = Window(queue_in=queue_disp, path=image_dir, image_screen_ratio=kwargs['image_screen_ratio'])
+    display = Display(queue_in=queue_seq)
+
+    window = Window(get_next=display.get_next, path=image_dir, image_screen_ratio=kwargs['image_screen_ratio'], interval_s=kwargs['display_inverval_s'])
     max_image_size = (window.window_width, window.window_height)
 
     scanner = Scanner(queue=queue_scan, path=image_dir, interval_s=kwargs['scan_interval_s'], file_pattern=kwargs['file_pattern'])
-    display = Display(queue_in=queue_seq, queue_out=queue_disp, interval_s=kwargs['display_inverval_s'])
     converter = Converter(queue_in=queue_scan, queue_out=queue_seq, path=temp_image_dir, conf=conf, n_iter=kwargs['iter'], save_steps=kwargs['save_steps'], max_image_size=max_image_size)
 
     display.start()
