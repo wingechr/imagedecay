@@ -128,7 +128,7 @@ class Window():
         cam.start()
         img = cam.get_image()
         cam.stop()
-        cam_index = int(time.time()*1000)
+        cam_index = int(time.time() * 1000)
         filepath = os.path.join(self.path, '_campic.%s.png' % cam_index)
         logging.info('CAMPIC: %s' % filepath)
         pyg.image.save(img, filepath)
@@ -142,6 +142,8 @@ def main(**kwargs):
     assert(os.path.exists(image_dir))
     assert(os.path.exists(temp_image_dir))
 
+    list_index = os.path.join(temp_image_dir, 'index.html')
+
     queue_scan = Queue()
     queue_seq = Queue()
 
@@ -153,12 +155,11 @@ def main(**kwargs):
     max_image_size = (window.window_width, window.window_height)
 
     scanner = Scanner(queue=queue_scan, path=image_dir, interval_s=kwargs['scan_interval_s'], file_pattern=kwargs['file_pattern'])
-    converter = Converter(queue_in=queue_scan, queue_out=queue_seq, path=temp_image_dir, conf=conf, n_iter=kwargs['iter'], save_steps=kwargs['save_steps'], max_image_size=max_image_size)
+    converter = Converter(queue_in=queue_scan, queue_out=queue_seq, path=temp_image_dir, conf=conf, n_iter=kwargs['iter'], save_steps=kwargs['save_steps'], max_image_size=max_image_size, list_index=list_index)
 
     display.start()
     converter.start()
     scanner.start()
-
 
     try:
         window.run()

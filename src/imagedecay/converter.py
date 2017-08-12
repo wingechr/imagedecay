@@ -14,7 +14,7 @@ class Converter(Thread):
     """
     Scan a directory periodically for new files matching a pattern and call a given function
     """
-    def __init__(self, queue_in, queue_out, path, conf, n_iter, save_steps, max_image_size, output_fmt='bmp', publish_steps=True):
+    def __init__(self, queue_in, queue_out, path, conf, n_iter, save_steps, max_image_size, output_fmt='bmp', publish_steps=True, list_index='index.html'):
         super().__init__(target=self.run, daemon=False)
         self.queue_in = queue_in
         self.queue_out = queue_out
@@ -27,6 +27,7 @@ class Converter(Thread):
         self.output_fmt = output_fmt
         self.publish_steps = publish_steps
         self.imagelist = list()
+        self.list_index = list_index
 
     def resize(self, img):
         sx = self.max_image_size[0] / img.shape[1]
@@ -38,6 +39,7 @@ class Converter(Thread):
 
     def run(self):
         logging.info("CONV START")
+        self.write_to_list_index('<hml>\n<head>\n<link href="style.css" rel="stylesheet">\n</head>\n<body>\n', append=False)
         while self.running:
             # wait on queue for next input
             filepath = self.queue_in.get()
@@ -61,10 +63,12 @@ class Converter(Thread):
             if self.publish_steps:
                 logging.info("CONV SHOW %s" % filepath_out)
                 self.queue_out.put(self.imagelist)
+            canceled=False
             for i in range(1, self.n_iter + 1):
                 if not self.queue_in.empty():
                     logging.info('CONV CANCEL')
-                    continue
+                    canceled = True
+                    break
                 logging.debug('CONV STEP %5d' % i)
                 # apply filter
                 im_array = apply_filterconf(im_array, self.conf)
@@ -79,11 +83,13 @@ class Converter(Thread):
                         logging.info("CONV SHOW %s" % filepath_out)
                         self.queue_out.put(self.imagelist)
             # publish list if sequence finished
-            self.link_last_img(filepath_out)
-            if not self.publish_steps:
-                logging.info("CONV SHOW ALL")
-                self.queue_out.put(self.imagelist)
+            if not canceled:
+                self.link_last_img(filepath_out)
+                if  not self.publish_steps:
+                    logging.info("CONV SHOW ALL")
+                    self.queue_out.put(self.imagelist)
         self.queue_out.put(None)
+        self.write_to_list_index('\n</body>\n</hml>')
         logging.info("CONV STOP")
 
     def link_last_img(self, imgpath):
@@ -91,7 +97,8 @@ class Converter(Thread):
             return
         logging.info("CONV LINK %s" % imgpath)
         imgpath = os.path.basename(imgpath)
-        pass  # TODO
+        imgpath = imgpath.replace('\\', '/')
+        self.write_to_list_index('<img src="%s"></img>' % imgpath)
 
     def start(self):
         """
@@ -107,3 +114,7 @@ class Converter(Thread):
         filename = os.path.basename(filepath)
         path = os.path.join(self.path, '%s.%06d.%s' % (filename, i, self.output_fmt))
         return path
+
+    def write_to_list_index(self, text, append=True):
+        with open(self.list_index, 'a' if append else 'w', encoding='utf-8') as f:
+            f.write(text)
