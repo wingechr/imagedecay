@@ -9,6 +9,22 @@ from threading import Thread
 from imagedecay.readwrite import read, write
 from imagedecay.filter import apply_filterconf
 from skimage.transform import rescale
+import configargparse
+from imagedecay.filter import get_conf
+import sys
+
+DEFAULT_LOGLEVEL = 'WARNING'
+
+CMD_ARGS = [  # list of pairs of (args_tuple, kwargs_dict)
+    (['source_image'], {
+        'help': 'path source images',
+        'type': str
+    }),
+    (['filtername'], {
+        'help': 'name of the filter',
+    })
+]
+
 
 class Converter(Thread):
     """
@@ -118,3 +134,62 @@ class Converter(Thread):
     def write_to_list_index(self, text, append=True):
         with open(self.list_index, 'a' if append else 'w', encoding='utf-8') as f:
             f.write(text)
+
+# test filter on one file
+def main(source_image, filtername, **filterargs):
+    # load image
+    target_image = source_image + "_" + filtername
+    for k, v in sorted(filterargs.items()):
+        target_image += '_%s=%.3f' % (k, v)
+    target_image += ".png"
+
+    im_array, meta = read(source_image)
+    conf = [
+        {
+            "name": filtername,
+            "kwargs": filterargs
+        }
+    ]
+    im_array = apply_filterconf(im_array, conf)
+    write(im_array, target_image)
+
+
+if __name__ == '__main__':
+    # command line > environment variables > config file values > defaults
+    ap = configargparse.ArgParser(
+        default_config_files=[],     # add config files here
+        add_config_file_help=False,  # but dont show help about the syntax
+        auto_env_var_prefix=None,    # use environment variables without prefix (None for not using them)
+        add_env_var_help=False       # but dont show help about that either
+    )
+    ap.add('--loglevel', '-l', type=str, default=DEFAULT_LOGLEVEL, help='ERROR, WARNING, INFO, or DEBUG')
+    # add additional arguments
+    for a in CMD_ARGS:
+        ap.add(*a[0], **a[1])
+    # parse and make a dictionary
+    args, unknown = ap.parse_known_args()
+    settings = vars(args)
+    loglevel = settings.pop('loglevel')
+    # create dictionary of all excess args,
+    # that come in pairs of --key, val
+    for i in range(len(unknown) // 2):
+        k = unknown[i*2].replace('--', '')
+        v = float(unknown[i * 2 + 1])
+        settings[k] = v
+    # reset basic config, set loglevel
+    for handler in logging.root.handlers[:]:
+        logging.root.removeHandler(handler)
+    logging.basicConfig(format='[%(asctime)s %(funcName)s %(levelname)s] %(message)s',
+                        level=getattr(logging, loglevel.upper()))
+    logging.debug('ARGUMENTS:\n' + ap.format_values())
+
+    # main wrapper
+    rc = 0
+    try:
+        main(**settings)
+    except KeyboardInterrupt:
+        rc = 130
+    except Exception as e:  # unhandled Exception
+        logging.error(e, exc_info=e)  # show error trace
+        rc = 1
+    sys.exit(rc)

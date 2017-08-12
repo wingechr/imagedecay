@@ -171,19 +171,6 @@ def main(**kwargs):
         display.stop()
 
 
-
-def on_error(**kwargs):
-    pass
-
-
-def on_interrup(**kwargs):
-    pass
-
-
-def on_finally(**kwargs):
-    pass
-
-
 if __name__ == '__main__':
     # command line > environment variables > config file values > defaults
     ap = configargparse.ArgParser(
@@ -192,7 +179,7 @@ if __name__ == '__main__':
         auto_env_var_prefix=None,    # use environment variables without prefix (None for not using them)
         add_env_var_help=False       # but dont show help about that either
     )
-    ap.add('-c', '--config', required=False, is_config_file=True, help='config file path')
+    #ap.add('-c', '--config', required=False, is_config_file=True, help='config file path')
     ap.add('--loglevel', '-l', type=str, default=DEFAULT_LOGLEVEL, help='ERROR, WARNING, INFO, or DEBUG')
     # add additional arguments
     for a in CMD_ARGS:
@@ -212,11 +199,8 @@ if __name__ == '__main__':
     try:
         main(**settings)
     except KeyboardInterrupt:
-        on_interrup(**settings)
         rc = 130
     except Exception as e:  # unhandled Exception
         logging.error(e, exc_info=e)  # show error trace
-        on_error(**settings)
         rc = 1
-    on_finally(**settings)
     sys.exit(rc)

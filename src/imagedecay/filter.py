@@ -89,4 +89,14 @@ def filter_random_offset(a, alpha, dx, dy, **kwargs):
     a = a * (1 - alpha) + a_ * alpha
     return a
 
+def filter_colorrange(a, power_0, power_1, cmin=None, cmax=None, **kwargs):
+    a = a ** (power_0 + (power_1 - power_0) * a)
+    a_min = np.min(a)
+    a_max = np.max(a)
+    if cmin is None:
+        cmin = a_min
+    if cmax is None:
+        cmax = a_max
+    a = (a - a_min) / (a_max - a_min) * (cmax - cmin) + cmin
+    return a
 
