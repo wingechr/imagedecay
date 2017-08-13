@@ -78,7 +78,7 @@ class Converter(Thread):
             self.imagelist.append(filepath_out)
             if self.publish_steps:
                 logging.info("CONV SHOW %s" % filepath_out)
-                self.queue_out.put(self.imagelist)
+                self.queue_out.put([filepath_out])
             canceled=False
             for i in range(1, self.n_iter + 1):
                 if not self.queue_in.empty():
@@ -97,13 +97,13 @@ class Converter(Thread):
                     self.imagelist.append(filepath_out)
                     if self.publish_steps:
                         logging.info("CONV SHOW %s" % filepath_out)
-                        self.queue_out.put(self.imagelist)
+                        self.queue_out.put([filepath_out])
             # publish list if sequence finished
             if not canceled:
                 self.link_last_img(filepath_out)
-                if  not self.publish_steps:
-                    logging.info("CONV SHOW ALL")
-                    self.queue_out.put(self.imagelist)
+                logging.info("CONV SHOW ALL")
+                self.queue_out.put([])
+                self.queue_out.put(self.imagelist)
         self.queue_out.put(None)
         self.write_to_list_index('\n</body>\n</hml>')
         logging.info("CONV STOP")
