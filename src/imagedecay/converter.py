@@ -4,16 +4,11 @@
 
 import logging
 import os
-import sys
-
-from threading import Thread
-import configargparse
 
 from skimage.transform import rescale
 from imagedecay.readwrite import read, write
 from imagedecay.filter import apply_filterconf
-
-DEFAULT_LOGLEVEL = 'WARNING'
+from imagedecay.thread import MyThread, main_setup
 
 CMD_ARGS = [  # list of pairs of (args_tuple, kwargs_dict)
     (['source_image'], {
@@ -26,18 +21,17 @@ CMD_ARGS = [  # list of pairs of (args_tuple, kwargs_dict)
 ]
 
 
-class Converter(Thread):
+class Converter(MyThread):
     """Scan a directory periodically for new files matching a pattern and call a given function."""
     def __init__(self, queue_in, queue_out, path, conf, n_iter, save_steps, max_image_size,
                  output_fmt='bmp', publish_steps=True, list_index='index.html'):
-        super().__init__(target=self.run, daemon=False)
+        super().__init__()
         self.queue_in = queue_in
         self.queue_out = queue_out
         self.path = path
         self.conf = conf
         self.n_iter = n_iter
         self.save_steps = save_steps
-        self.running = False
         self.max_image_size = max_image_size
         self.output_fmt = output_fmt
         self.publish_steps = publish_steps
@@ -46,8 +40,10 @@ class Converter(Thread):
 
     def resize(self, img):
         """Resize the given image.
+
         Args:
             img (array): input image
+
         Returns:
             image array
         """
@@ -125,15 +121,6 @@ class Converter(Thread):
         imgpath = imgpath.replace('\\', '/')
         self.write_to_list_index('<img src="%s"></img>' % imgpath)
 
-    def start(self):
-        """Start the thread."""
-        self.running = True
-        super().start()
-
-    def stop(self):
-        """Stop the thread."""
-        self.running = False
-
     def get_output_filename(self, filepath, i):
         """Get filename for basename and index."""
         filename = os.path.basename(filepath)
@@ -142,6 +129,7 @@ class Converter(Thread):
 
     def write_to_list_index(self, text, append=True):
         """Write text to index.html.
+
         Args:
             append (bool): create new file if False
         """
@@ -168,34 +156,4 @@ def main(source_image, filtername, **filterargs):
 
 
 if __name__ == '__main__':
-    # command line > environment variables > config file values > defaults
-    AP = configargparse.ArgParser(
-        default_config_files=[],  # add config files here
-        add_config_file_help=False,  # but dont show help about the syntax
-        auto_env_var_prefix=None,  # use environment vars without prefix (None for not using them)
-        add_env_var_help=False  # but dont show help about that either
-    )
-    #ap.add('-c', '--config', required=False, is_config_file=True, help='config file path')
-    AP.add('--loglevel', '-l', type=str, default=DEFAULT_LOGLEVEL,
-           help='ERROR, WARNING, INFO, or DEBUG')
-    # add additional arguments
-    for a in CMD_ARGS:
-        AP.add(*a[0], **a[1])
-    # parse and make a dictionary
-    KWARGS = vars(AP.parse_args())
-    # reset basic config, set loglevel
-    for handler in logging.root.handlers[:]:
-        logging.root.removeHandler(handler)
-    logging.basicConfig(format='[%(asctime)s %(funcName)s %(levelname)s] %(message)s',
-                        level=getattr(logging, KWARGS.get('loglevel').upper()))
-    logging.debug('ARGUMENTS:\n' + AP.format_values())
-    # main wrapper
-    RC = 0
-    try:
-        main(**KWARGS)
-    except KeyboardInterrupt:
-        RC = 130
-    except Exception as err:  # unhandled Exception
-        logging.error(err, exc_info=err)  # show error trace
-        RC = 1
-    sys.exit(RC)
+    main_setup(main, cmd_args=CMD_ARGS, default_loglevel='WARNING')

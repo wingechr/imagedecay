@@ -12,9 +12,11 @@ import scipy.ndimage.filters
 
 def get_conf(filepath, encoding='utf-8'):
     """Read filter from config file.
+
     Args:
         filepath (str): Path to config json.
         encoding (str, optional): text encoding of config file.
+
     Returns:
         filter configuration object.
     """
@@ -51,6 +53,7 @@ def _apply_filter(im_array, filter_conf):
 
 def filter_noise(im_array, cmin=0.0, cmax=1.0, gauss_sigma=1.0, **dummy_kwargs):
     """Apply random noise and optional gaussian blur after that.
+
     Args:
         im_array (array): image array
         cmin (float): minimum noise, defaults to 0.0
@@ -69,6 +72,7 @@ def filter_noise(im_array, cmin=0.0, cmax=1.0, gauss_sigma=1.0, **dummy_kwargs):
 
 def filter_colordepth(im_array, n_colors, **dummy_kwargs):
     """Change the number of available colors per channel.
+
     Args:
         im_array (array): image array
         n_colors (int): number of colors
@@ -79,6 +83,7 @@ def filter_colordepth(im_array, n_colors, **dummy_kwargs):
 
 def filter_gaussian(im_array, sigma, **dummy_kwargs):
     """Apply gaussian filter (blur).
+
     Args:
         im_array (array): image array
         sigma (float): standard deviation for gauss filter.
@@ -89,6 +94,7 @@ def filter_gaussian(im_array, sigma, **dummy_kwargs):
 
 def filter_random_offset(im_array, alpha, max_x, max_y, **dummy_kwargs):
     """Overlay a randomly offset copy with some transparency.
+
     Args:
         im_array (array): image array
         alpha (float): transparency
@@ -117,6 +123,7 @@ def filter_random_offset(im_array, alpha, max_x, max_y, **dummy_kwargs):
 
 def filter_colorrange(im_array, power_0, power_1, cmin=None, cmax=None, **dummy_kwargs):
     """Rescale the color range using a power function.
+
     Args:
         im_array (array): image array
         power_0 (float): exponential power at value 0.0

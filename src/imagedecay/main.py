@@ -7,18 +7,15 @@ import time
 import sys
 from queue import Queue
 
-import configargparse
 import pygame as pyg
 from pygame import camera
 from pygame.locals import QUIT, KEYDOWN, K_ESCAPE, K_RETURN
 
+from imagedecay.thread import MyThread, main_setup
 from imagedecay.filter import get_conf
 from imagedecay.scanner import Scanner
 from imagedecay.display import Display
 from imagedecay.converter import Converter
-
-
-DEFAULT_LOGLEVEL = 'WARNING'
 
 CMD_ARGS = [  # list of pairs of (args_tuple, kwargs_dict)
     (['image_dir'], {
@@ -68,9 +65,13 @@ CMD_ARGS = [  # list of pairs of (args_tuple, kwargs_dict)
 ]
 
 
-class Window():
+
+
+
+class Window(MyThread):
     """Output screen."""
     def __init__(self, get_next, path, image_screen_ratio=1.0, interval_s=1.0, enable_cam=False):
+        super().__init__()
         self.get_next = get_next
         self.interval_s = interval_s
         self.path = path
@@ -92,7 +93,6 @@ class Window():
         pyg.display.set_icon(icon_image)
         pyg.mouse.set_visible(False)
         self.last_update = time.time()
-        self.running = False
 
     def run(self):
         """Start the thread."""
@@ -122,6 +122,7 @@ class Window():
 
     def display(self, imgpath):
         """Show the image on the screen.
+
         Args:
             imgpath (str): path to image
         """
@@ -189,34 +190,4 @@ def main(**kwargs):
 
 
 if __name__ == '__main__':
-    # command line > environment variables > config file values > defaults
-    AP = configargparse.ArgParser(
-        default_config_files=[],  # add config files here
-        add_config_file_help=False,  # but dont show help about the syntax
-        auto_env_var_prefix=None,  # use environment vars without prefix (None for not using them)
-        add_env_var_help=False  # but dont show help about that either
-    )
-    #ap.add('-c', '--config', required=False, is_config_file=True, help='config file path')
-    AP.add('--loglevel', '-l', type=str, default=DEFAULT_LOGLEVEL,
-           help='ERROR, WARNING, INFO, or DEBUG')
-    # add additional arguments
-    for a in CMD_ARGS:
-        AP.add(*a[0], **a[1])
-    # parse and make a dictionary
-    KWARGS = vars(AP.parse_args())
-    # reset basic config, set loglevel
-    for handler in logging.root.handlers[:]:
-        logging.root.removeHandler(handler)
-    logging.basicConfig(format='[%(asctime)s %(funcName)s %(levelname)s] %(message)s',
-                        level=getattr(logging, KWARGS.get('loglevel').upper()))
-    logging.debug('ARGUMENTS:\n' + AP.format_values())
-    # main wrapper
-    RC = 0
-    try:
-        main(**KWARGS)
-    except KeyboardInterrupt:
-        RC = 130
-    except Exception as err:  # unhandled Exception
-        logging.error(err, exc_info=err)  # show error trace
-        RC = 1
-    sys.exit(RC)
+    main_setup(main, cmd_args=CMD_ARGS, default_loglevel='WARNING')

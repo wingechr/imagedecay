@@ -1,4 +1,4 @@
-Introduction
+panIntroduction
 ============
 
 * This is a small tool to create iterative image effects.
@@ -15,7 +15,7 @@ usage: main.py [-h] [-c CONFIG] [--loglevel LOGLEVEL]
 
 positional arguments:
   image_dir             path to scan for new images
-  temp_image_dir        path for converted images. must be different from image_dir!                       
+  temp_image_dir        path for converted images. must be different from image_dir!
 
 optional arguments:
   -h, --help            show this help message and exit

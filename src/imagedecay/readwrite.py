@@ -13,8 +13,10 @@ BG_COLOR_FLOAT = 1.0
 
 def read(filepath):
     """Read image data from file.
+
     Args:
         filepath (str): path to image file
+
     Returns:
         image array as float, metadata dict
     """
@@ -35,6 +37,7 @@ def read(filepath):
 
 def write(im_array, filepath):
     """Write image data to file.
+
     Args:
         im_array (array): image data as float
         filepath (str): path to image file
@@ -46,11 +49,14 @@ def write(im_array, filepath):
 
 def remove_alpha(im_array, bg_color_float=BG_COLOR_FLOAT):
     """Remove alpha channel, if it exists.
+
     If number of channels is 2 or 4:
     remove last channel by blending it with the background according to transparency.
     Assumes that array is float.
+
     Args:
         im_array (array): image data
+
     Returns:
         image data array
     """

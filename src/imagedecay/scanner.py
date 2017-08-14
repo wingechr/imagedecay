@@ -5,17 +5,16 @@ import logging
 import os
 import re
 import time
-from threading import Thread
+from imagedecay.thread import MyThread
 
-class Scanner(Thread):
+class Scanner(MyThread):
     """Scan a directory periodically for new files matching a pattern and call a given function."""
     def __init__(self, queue, path, interval_s, file_pattern=r'.*\.py'):
-        super().__init__(target=self.run, daemon=False)
+        super().__init__()
         self.queue = queue
         self.path = path
         self.interval_s = float(interval_s)
         self.file_pattern = re.compile(file_pattern, re.IGNORECASE)
-        self.running = False
         self.files = self.get_files()
         self.threads = list()
 
@@ -44,13 +43,3 @@ class Scanner(Thread):
     def get_files(self):
         """get current list of files in directory."""
         return set(x for x in os.listdir(self.path) if self.file_pattern.match(x))
-
-    def start(self):
-        """Start main thread."""
-        self.running = True
-        super().start()
-
-    def stop(self):
-        """Stop the main thread."""
-        self.running = False
-

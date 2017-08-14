@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 # coding: utf-8
+"""setuptools configuration"""
 
 import codecs
-from setuptools import setup, find_packages
 import unittest
+from setuptools import setup, find_packages
+
 import conf
 
-
-def read(f):
-    return codecs.open(f, 'rb', 'utf8').read()
+def read(filepath):
+    """Read text file."""
+    return codecs.open(filepath, 'rb', 'utf8').read()
 
 
 def run_tests():
+    """Run all user defined tests."""
     test_loader = unittest.TestLoader()
     test_suite = test_loader.discover('tests')
     return test_suite

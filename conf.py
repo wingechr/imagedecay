@@ -1,4 +1,5 @@
 # coding=utf-8
+"""sphinx configuration"""
 
 import os
 import sphinx_rtd_theme
@@ -46,9 +47,9 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
-    'sphinx.ext.graphviz',     # ``dot`` must be in PATH
-    'sphinxcontrib.napoleon',  # requires sphinxcontrib-napoleon
-    # 'sphinx_fontawesome',    # broken
+    'sphinx.ext.graphviz', # ``dot`` must be in PATH
+    'sphinxcontrib.napoleon', # requires sphinxcontrib-napoleon
+    'sphinx_fontawesome', # requires sphinx_fontawesome
 ]
 
 # Napoleon settings

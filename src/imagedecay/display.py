@@ -2,17 +2,17 @@
 """Control the image display queue."""
 
 import logging
-from threading import Thread
+
+from imagedecay.thread import MyThread
 
 
-class Display(Thread):
+class Display(MyThread):
     """Control the image display queue."""
     def __init__(self, queue_in):
-        super().__init__(target=self.run, daemon=False)
+        super().__init__()
         self.queue_in = queue_in
         self.image_list = list()
         self.image_index = -1
-        self.running = False
 
     def run(self):
         """Main thread."""
@@ -33,15 +33,6 @@ class Display(Thread):
             if self.image_list is None:
                 break
         logging.debug("DISP STOP")
-
-    def start(self):
-        """Start the thread."""
-        self.running = True
-        super().start()
-
-    def stop(self):
-        """Stop the thread."""
-        self.running = False
 
     def get_next(self):
         """Get the image to display."""

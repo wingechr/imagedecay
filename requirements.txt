@@ -1,5 +1,5 @@
 configargparse
-scikit-image
 numpy
 scipy
-opencv
+scikit-image # formerly skimage
+pygame
