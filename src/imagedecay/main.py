@@ -118,7 +118,7 @@ class Window(MyThread):
         Args:
             imgpath (str): path to image
         """
-        logging.debug('WINDOW SHOW %s', imgpath)
+        logging.info('WINDOW SHOW %s', imgpath)
         self.clear()
         if imgpath:
             img = pyg.image.load(imgpath)

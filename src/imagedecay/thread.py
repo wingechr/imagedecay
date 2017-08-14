@@ -38,10 +38,6 @@ class MyQueue():
         """Put item into queue."""
         self._queue.put(item, block=True)
 
-    def empty(self):
-        """True if queue is empty (no guarantee though)"""
-        self._queue.empty()
-
     def _get_next_or_none(self):
         try:
             item = self._queue.get(block=False)
@@ -51,9 +47,11 @@ class MyQueue():
 
     def get_last_nowait(self):
         """Get last item (discard others), but don't wait if empty (return None)"""
-        item = None
-        while not self._queue.empty():
-            item = self._get_next_or_none()  # should return an item, but no guarantee
+        item_next = self._get_next_or_none()
+        item = item_next
+        while item_next is not None:
+            item = item_next
+            item_next = self._get_next_or_none()
         return item
 
     def get_last_wait(self):

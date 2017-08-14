@@ -82,9 +82,14 @@ class Converter(MyThread):
         logging.info("CONV START")
         template = '<hml>\n<head>\n<link href="style.css" rel="stylesheet">\n</head>\n<body>\n'
         self.write_to_list_index(template, append=False)
+        filepath_next = None
         while self.running:
             # wait on queue for next input
-            filepath = self.queue_in.get_last_wait()
+            if filepath_next:  # from peek
+                filepath = filepath_next
+                filepath_next = None
+            else:
+                filepath = self.queue_in.get_last_wait()
             logging.info("CONV NEW %s", filepath)
             self.queue_out.put([])  # set empty cycle
             self.imagelist = list()
@@ -98,8 +103,10 @@ class Converter(MyThread):
                 self.queue_out.put(filepath_out)  # queue next available
             canceled = False
             for i in range(1, self.n_iter + 1):
-                if not self.queue_in.empty():
-                    logging.info('CONV CANCEL')
+                # check if there is a new item
+                filepath_next = self.queue_in.get_first_nowait()
+                if filepath_next:
+                    logging.info('CONV CANCEL because of: %s', filepath_next)
                     canceled = True
                     break
                 logging.debug('CONV STEP %5d', i)
@@ -120,6 +127,7 @@ class Converter(MyThread):
                 self.link_last_img(filepath_out)
                 logging.info("CONV SHOW ALL")
                 self.queue_out.put(self.imagelist)  # set full cycle
+            filepath = None  # finished
         self.write_to_list_index('\n</body>\n</hml>')
         logging.info("CONV STOP")
 
