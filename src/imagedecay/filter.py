@@ -1,19 +1,19 @@
 # coding: utf-8
-"""Read filter from config file.
-"""
+"""Read filter from config file."""
 
 import json
 import sys
 import logging
+import random
+
 import numpy as np
 import scipy.ndimage.filters
-import random
 
 
 def get_conf(filepath, encoding='utf-8'):
-    """
+    """Read filter from config file.
     Args:
-        name (str): Name of configuration, ``<name>.json`` must be in ``conf`` directory.
+        filepath (str): Path to config json.
         encoding (str, optional): text encoding of config file.
     Returns:
         filter configuration object.
@@ -21,9 +21,9 @@ def get_conf(filepath, encoding='utf-8'):
     if not filepath:
         logging.warning('FILTER No filter.')
         return []
-    logging.debug('FILTER Read configuration from: ' + filepath)
-    with open(filepath, 'r', encoding=encoding) as f:
-        data = json.load(f)
+    logging.debug('FILTER Read configuration from: %s', filepath)
+    with open(filepath, encoding=encoding) as file:
+        data = json.load(file)
     return data
 
 
@@ -35,68 +35,102 @@ def _get_filter_by_name(name):
 
 
 def apply_filterconf(im_array, filterconf):
-    for f in filterconf:
-        im_array = _apply_filter(im_array, f)
+    """Apply the given filter to the image array."""
+    for flt in filterconf:
+        im_array = _apply_filter(im_array, flt)
     return im_array
 
 
-def _apply_filter(im_array, filter):
-    filter_fun = _get_filter_by_name(filter['name'])
-    filter_kwargs = filter['kwargs']
-    logging.debug('FILTER %s: %s' % (filter['name'], filter_kwargs))
+def _apply_filter(im_array, filter_conf):
+    filter_fun = _get_filter_by_name(filter_conf['name'])
+    filter_kwargs = filter_conf['kwargs']
+    logging.debug('FILTER %s: %s', filter_conf['name'], filter_kwargs)
     im_array = filter_fun(im_array, **filter_kwargs)
     return im_array
 
 
-def filter_noise(a, min=0.0, max=1.0, gauss_sigma=0.3, **kwargs):
-    rnd = np.random.rand(*a.shape)
+def filter_noise(im_array, cmin=0.0, cmax=1.0, gauss_sigma=1.0, **dummy_kwargs):
+    """Apply random noise and optional gaussian blur after that.
+    Args:
+        im_array (array): image array
+        cmin (float): minimum noise, defaults to 0.0
+        cmax (float): maximum noise, defaults to 0.0
+        gauss_sigma (float): standard deviation for gauss filter.
+    """
+    rnd = np.random.rand(*im_array.shape)
     rnd = rnd * 2.0 - 1.0
-    rnd = rnd * (max - min) + min * np.sign(rnd)
+    rnd = rnd * (cmax - cmin) + cmin * np.sign(rnd)
     if gauss_sigma:
         rnd = filter_gaussian(rnd, sigma=gauss_sigma)
-    a = a + rnd
-    a = a.clip(0.0, 1.0)  # clip
-    return a
+    im_array = im_array + rnd
+    im_array = im_array.clip(0.0, 1.0)  # clip
+    return im_array
 
 
-def filter_colordepth(a, n_colors, **kwargs):
-    a = np.round(a * n_colors) / n_colors
-    return a
+def filter_colordepth(im_array, n_colors, **dummy_kwargs):
+    """Change the number of available colors per channel.
+    Args:
+        im_array (array): image array
+        n_colors (int): number of colors
+    """
+    im_array = np.round(im_array * n_colors) / n_colors
+    return im_array
 
 
-def filter_gaussian(a, sigma, **kwargs):
-    a = scipy.ndimage.filters.gaussian_filter(a, sigma=sigma, mode='nearest')
-    return a
+def filter_gaussian(im_array, sigma, **dummy_kwargs):
+    """Apply gaussian filter (blur).
+    Args:
+        im_array (array): image array
+        sigma (float): standard deviation for gauss filter.
+    """
+    im_array = scipy.ndimage.filters.gaussian_filter(im_array, sigma=sigma, mode='nearest')
+    return im_array
 
 
-def filter_random_offset(a, alpha, dx, dy, **kwargs):
-    def shift_img(a, n, axis):
-        m = a.shape[axis]
-        d1 = 0 if n < 0 else n
-        d2 = m - (0 if n > 0 else -n)
-        r = (n + m) % m
-        a_ = np.roll(a, r, axis=axis)
-        slices1 = [slice(0, s) for s in a.shape]
-        slices1[axis] = slice(0, d1)
-        slices2 = [slice(0, s) for s in a.shape]
-        slices2[axis] = slice(d2, m)
-        a_[slices1] = 0
-        a_[slices2] = 0
-        return a_
-    dx = round((random.random() * 2.0 - 1.0) * dx * a.shape[0])
-    dy = round((random.random() * 2.0 - 1.0) * dy * a.shape[1])
-    a_ = shift_img(shift_img(a, dx, 0), dy, 1)
-    a = a * (1 - alpha) + a_ * alpha
-    return a
+def filter_random_offset(im_array, alpha, max_x, max_y, **dummy_kwargs):
+    """Overlay a randomly offset copy with some transparency.
+    Args:
+        im_array (array): image array
+        alpha (float): transparency
+        max_x (float): max offset in x in percent of width
+        max_y (float): max offset in y in percent of height
+    """
+    def _shift_img(im_array_src, n_pixels, axis):
+        n_max_pixels = im_array_src.shape[axis]
+        shift_left = 0 if n_pixels < 0 else n_pixels
+        shift_right = n_max_pixels - (0 if n_pixels > 0 else -n_pixels)
+        shift = (n_pixels + n_max_pixels) % n_max_pixels
+        im_array_trgt = np.roll(im_array_src, shift, axis=axis)
+        slices1 = [slice(0, s) for s in im_array_src.shape]
+        slices1[axis] = slice(0, shift_left)
+        slices2 = [slice(0, s) for s in im_array_src.shape]
+        slices2[axis] = slice(shift_right, n_max_pixels)
+        im_array_trgt[slices1] = 0
+        im_array_trgt[slices2] = 0
+        return im_array_trgt
+    max_x = round((random.random() * 2.0 - 1.0) * max_x * im_array.shape[0])
+    max_y = round((random.random() * 2.0 - 1.0) * max_y * im_array.shape[1])
+    im_array_shifted = _shift_img(_shift_img(im_array, max_x, 0), max_y, 1)
+    im_array = im_array * (1 - alpha) + im_array_shifted * alpha
+    return im_array
 
-def filter_colorrange(a, power_0, power_1, cmin=None, cmax=None, **kwargs):
-    a = a ** (power_0 + (power_1 - power_0) * a)
-    a_min = np.min(a)
-    a_max = np.max(a)
+
+def filter_colorrange(im_array, power_0, power_1, cmin=None, cmax=None, **dummy_kwargs):
+    """Rescale the color range using a power function.
+    Args:
+        im_array (array): image array
+        power_0 (float): exponential power at value 0.0
+        power_1 (float): exponential power at value 1.0
+        cmin (float): minimum color value
+        cmax (float): maximum color value
+    """
+    im_array = im_array ** (power_0 + (power_1 - power_0) * im_array)
+    a_min = np.min(im_array)
+    a_max = np.max(im_array)
     if cmin is None:
         cmin = a_min
     if cmax is None:
         cmax = a_max
-    a = (a - a_min) / (a_max - a_min) * (cmax - cmin) + cmin
-    return a
+    im_array = (im_array - a_min) / (a_max - a_min) * (cmax - cmin) + cmin
+    return im_array
 

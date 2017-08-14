@@ -1,7 +1,5 @@
-#!/usr/bin/env python3
 # coding=utf-8
-"""Scan folder for new files
-"""
+"""Scan folder for new files."""
 
 import logging
 import os
@@ -10,10 +8,8 @@ import time
 from threading import Thread
 
 class Scanner(Thread):
-    """
-    Scan a directory periodically for new files matching a pattern and call a given function
-    """
-    def __init__(self, queue, path, interval_s, file_pattern='.*\.py'):
+    """Scan a directory periodically for new files matching a pattern and call a given function."""
+    def __init__(self, queue, path, interval_s, file_pattern=r'.*\.py'):
         super().__init__(target=self.run, daemon=False)
         self.queue = queue
         self.path = path
@@ -24,7 +20,8 @@ class Scanner(Thread):
         self.threads = list()
 
     def run(self):
-        logging.info("SCAN START %s" % self.path)
+        """Main thread."""
+        logging.info("SCAN START %s", self.path)
         while self.running:
             logging.debug("SCAN SCANNING")
             files = self.get_files()
@@ -35,9 +32,9 @@ class Scanner(Thread):
                 new_files_by_mtime = [(os.path.getmtime(f), f) for f in new_files_with_path]
                 new_files_by_mtime = list(sorted(new_files_by_mtime, reverse=True))
                 latest = new_files_by_mtime[0][1]
-                for t, f in new_files_by_mtime[1:]:
-                    logging.info('SCAN SKIP %s' % f)
-                logging.info('SCAN ADD %s' % latest)
+                for dummy_ctime, filename in new_files_by_mtime[1:]:
+                    logging.info('SCAN SKIP %s', filename)
+                logging.info('SCAN ADD %s', latest)
                 self.queue.put(latest)
                 self.files = self.files | new_files
             time.sleep(self.interval_s)
@@ -45,15 +42,15 @@ class Scanner(Thread):
         logging.info("SCAN STOP")
 
     def get_files(self):
+        """get current list of files in directory."""
         return set(x for x in os.listdir(self.path) if self.file_pattern.match(x))
 
     def start(self):
-        """
-        Start scan process in new thread
-        """
+        """Start main thread."""
         self.running = True
         super().start()
 
     def stop(self):
+        """Stop the main thread."""
         self.running = False
 
