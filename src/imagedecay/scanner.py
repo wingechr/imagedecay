@@ -34,10 +34,9 @@ class Scanner(MyThread):
                 for dummy_ctime, filename in new_files_by_mtime[1:]:
                     logging.info('SCAN SKIP %s', filename)
                 logging.info('SCAN ADD %s', latest)
-                self.queue.put(latest)
+                self.queue.put(latest)  # put in path
                 self.files = self.files | new_files
             time.sleep(self.interval_s)
-        self.queue.put(None)
         logging.info("SCAN STOP")
 
     def get_files(self):

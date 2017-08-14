@@ -4,13 +4,15 @@
 from threading import Thread
 import logging
 import sys
+from queue import Queue, Empty
 
 import configargparse
+Thread()
 
 class MyThread(Thread):
     """Simple stoppable thread."""
-    def __init__(self):
-        super().__init__(target=self.run, daemon=False)
+    def __init__(self, daemon=True):
+        super().__init__(target=self.run, daemon=daemon)
         self.running = False
 
     def run(self):
@@ -25,6 +27,55 @@ class MyThread(Thread):
     def stop(self):
         """Stop the thread."""
         self.running = False
+
+
+class MyQueue():
+    """Synchronized queue"""
+    def __init__(self):
+        self._queue = Queue()
+
+    def put(self, item):
+        """Put item into queue."""
+        self._queue.put(item, block=True)
+
+    def empty(self):
+        """True if queue is empty (no guarantee though)"""
+        self._queue.empty()
+
+    def _get_next_or_none(self):
+        try:
+            item = self._queue.get(block=False)
+        except Empty as dummy_exc:
+            item = None
+        return item
+
+    def get_last_nowait(self):
+        """Get last item (discard others), but don't wait if empty (return None)"""
+        item = None
+        while not self._queue.empty():
+            item = self._get_next_or_none()  # should return an item, but no guarantee
+        return item
+
+    def get_last_wait(self):
+        """Get last item (discard others), but wait if empty"""
+        item = self.get_last_nowait()
+        if not item:
+            item = self.get_first_wait(clear_rest=False)
+        return item
+
+    def get_first_nowait(self, clear_rest=False):
+        """Get first item (discard others optionally), but don't wait if empty (return None)"""
+        item = self._get_next_or_none()
+        if clear_rest:
+            self.get_last_nowait()
+        return item
+
+    def get_first_wait(self, clear_rest=False):
+        """Get first item (discard others), but wait if empty"""
+        item = self._queue.get(block=True)
+        if clear_rest:
+            self.get_last_nowait()
+        return item
 
 
 def main_setup(main_fun, cmd_args, default_loglevel):
@@ -43,7 +94,13 @@ def main_setup(main_fun, cmd_args, default_loglevel):
     for arg in cmd_args:
         argp.add(*arg[0], **arg[1])
     # parse and make a dictionary
-    kwargs = vars(argp.parse_args())
+    kwargs, unrecognized_kwargs = argp.parse_known_args()
+    kwargs = vars(kwargs)
+    # add unknown:
+    for i in range(len(unrecognized_kwargs) // 2):  # always in pairs
+        key = unrecognized_kwargs[i * 2].replace('--', '')
+        val = float(unrecognized_kwargs[i * 2 + 1])  # must be floats
+        kwargs[key] = val
     # reset basic config, set loglevel
     for handler in logging.root.handlers[:]:
         logging.root.removeHandler(handler)

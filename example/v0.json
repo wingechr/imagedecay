@@ -22,8 +22,8 @@
     "name": "random_offset",
     "kwargs": {
         "alpha": 0.2,
-        "dx": 0.02,
-        "dy": 0.03
+        "max_x": 0.02,
+        "max_y": 0.03
     }
 }
 

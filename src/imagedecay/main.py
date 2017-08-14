@@ -3,15 +3,14 @@
 
 import logging
 import os
-import time
 import sys
-from queue import Queue
+import time
 
 import pygame as pyg
 from pygame import camera
 from pygame.locals import QUIT, KEYDOWN, K_ESCAPE, K_RETURN
 
-from imagedecay.thread import MyThread, main_setup
+from imagedecay.thread import MyThread, main_setup, MyQueue
 from imagedecay.filter import get_conf
 from imagedecay.scanner import Scanner
 from imagedecay.display import Display
@@ -65,15 +64,11 @@ CMD_ARGS = [  # list of pairs of (args_tuple, kwargs_dict)
 ]
 
 
-
-
-
 class Window(MyThread):
     """Output screen."""
-    def __init__(self, get_next, path, image_screen_ratio=1.0, interval_s=1.0, enable_cam=False):
-        super().__init__()
-        self.get_next = get_next
-        self.interval_s = interval_s
+    def __init__(self, queue_in, path, image_screen_ratio=1.0, enable_cam=False):
+        super().__init__(daemon=False)
+        self.queue_in = queue_in
         self.path = path
         self.enable_cam = enable_cam
         pyg.init()
@@ -92,7 +87,6 @@ class Window(MyThread):
         pyg.display.set_caption("imagedecay")
         pyg.display.set_icon(icon_image)
         pyg.mouse.set_visible(False)
-        self.last_update = time.time()
 
     def run(self):
         """Start the thread."""
@@ -112,10 +106,8 @@ class Window(MyThread):
                     break
                 elif self.enable_cam and err.type == KEYDOWN and err.key == K_RETURN:
                     self.take_webcam_picture()
-            now = time.time()
-            if now - self.last_update > self.interval_s:
-                img = self.get_next()
-                self.last_update = now
+            img = self.queue_in.get_last_nowait()
+            if img is not None:
                 self.display(img)
         pyg.display.quit()
         logging.debug('WINDOW QUIT')
@@ -163,13 +155,15 @@ def main(**kwargs):
     assert os.path.exists(image_dir)
     assert os.path.exists(temp_image_dir)
     list_index = os.path.join(temp_image_dir, 'index.html')
-    queue_scan = Queue()
-    queue_seq = Queue()
+    queue_scan = MyQueue()
+    queue_seq = MyQueue()
+    queue_disp = MyQueue()
     conf = get_conf(kwargs['filterconf'])
-    display = Display(queue_in=queue_seq)
-    window = Window(get_next=display.get_next, path=image_dir,
+    display = Display(queue_in=queue_seq, queue_out=queue_disp,
+                      interval_s=kwargs['display_interval_s'])
+    window = Window(queue_in=queue_disp, path=image_dir,
                     image_screen_ratio=kwargs['image_screen_ratio'],
-                    interval_s=kwargs['display_interval_s'], enable_cam=kwargs['enable_cam'])
+                    enable_cam=kwargs['enable_cam'])
     max_image_size = (window.window_width, window.window_height)
     scanner = Scanner(queue=queue_scan, path=image_dir, interval_s=kwargs['scan_interval_s'],
                       file_pattern=kwargs['file_pattern'])
