@@ -4,6 +4,22 @@ imagedecay package
 Submodules
 ----------
 
+imagedecay.converter module
+---------------------------
+
+.. automodule:: imagedecay.converter
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+imagedecay.display module
+-------------------------
+
+.. automodule:: imagedecay.display
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 imagedecay.filter module
 ------------------------
 
@@ -24,6 +40,22 @@ imagedecay.readwrite module
 ---------------------------
 
 .. automodule:: imagedecay.readwrite
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+imagedecay.scanner module
+-------------------------
+
+.. automodule:: imagedecay.scanner
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+imagedecay.thread module
+------------------------
+
+.. automodule:: imagedecay.thread
     :members:
     :undoc-members:
     :show-inheritance:

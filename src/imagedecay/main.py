@@ -60,6 +60,10 @@ CMD_ARGS = [  # list of pairs of (args_tuple, kwargs_dict)
     (['--enable_cam'], {
         'help': 'Enable ENTER to take webcam snapshot (Linux only)',
         'action': 'store_true'
+    }),
+    (['--output_fmt'], {
+        'help': 'output file format',
+        'default': 'bmp'
     })
 ]
 
@@ -169,7 +173,8 @@ def main(**kwargs):
                       file_pattern=kwargs['file_pattern'])
     converter = Converter(queue_in=queue_scan, queue_out=queue_seq, path=temp_image_dir,
                           conf=conf, n_iter=kwargs['iter'], save_steps=kwargs['save_steps'],
-                          max_image_size=max_image_size, list_index=list_index)
+                          max_image_size=max_image_size, output_fmt=kwargs['output_fmt'],
+                          list_index=list_index)
     display.start()
     converter.start()
     scanner.start()

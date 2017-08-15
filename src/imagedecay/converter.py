@@ -39,6 +39,10 @@ CMD_ARGS = [  # list of pairs of (args_tuple, kwargs_dict)
         'help': 'maximum imgage size comapred to screen sizes',
         'default': 1.0,
         'type': float
+    }),
+    (['--output_fmt'], {
+        'help': 'output file format',
+        'default': 'bmp'
     })
 ]
 
@@ -203,8 +207,11 @@ def main(source_image, temp_image_dir, **kwargs):
         raise Exception('No filter defined')
     n_iter = kwargs.get('iter', 1)
     save_steps = kwargs.get('save_steps', 1)
-    conv = Converter(None, None, temp_image_dir, conf, n_iter, save_steps)
+    output_fmt = kwargs.get('output_fmt', 'bmp')
+    conv = Converter(queue_in=None, queue_out=None, path=temp_image_dir, conf=conf,
+                     n_iter=n_iter, save_steps=save_steps, output_fmt=output_fmt)
     conv.run_on_image(source_image)
+
 
 if __name__ == '__main__':
     main_setup(main, cmd_args=CMD_ARGS, default_loglevel='WARNING')
