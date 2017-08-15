@@ -114,9 +114,9 @@ def filter_random_offset(im_array, alpha, max_x, max_y, **dummy_kwargs):
         im_array_trgt[slices1] = 0
         im_array_trgt[slices2] = 0
         return im_array_trgt
-    max_x = round((random.random() * 2.0 - 1.0) * max_x * im_array.shape[0])
-    max_y = round((random.random() * 2.0 - 1.0) * max_y * im_array.shape[1])
-    im_array_shifted = _shift_img(_shift_img(im_array, max_x, 0), max_y, 1)
+    max_x = round((random.random() * 2.0 - 1.0) * max_x * im_array.shape[1])
+    max_y = round((random.random() * 2.0 - 1.0) * max_y * im_array.shape[0])
+    im_array_shifted = _shift_img(_shift_img(im_array, max_y, 0), max_x, 1)
     im_array = im_array * (1 - alpha) + im_array_shifted * alpha
     return im_array
 
