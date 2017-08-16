@@ -70,11 +70,12 @@ CMD_ARGS = [  # list of pairs of (args_tuple, kwargs_dict)
 
 class Window(MyThread):
     """Output screen."""
-    def __init__(self, queue_in, path, image_screen_ratio=1.0, enable_cam=False):
+    def __init__(self, queue_in, path, image_screen_ratio=1.0, enable_cam=True):
         super().__init__(daemon=False)
         self.queue_in = queue_in
         self.path = path
         self.enable_cam = enable_cam
+        logging.error(self.enable_cam)
         pyg.init()
         winf = pyg.display.Info()
         self.window_width = int(winf.current_w * image_screen_ratio)
@@ -151,7 +152,7 @@ class Window(MyThread):
         camera.quit()
 
 
-def main(**kwargs):
+def main(**kwargs):    
     """Entry point for the main script."""
     image_dir = kwargs['image_dir']
     temp_image_dir = kwargs['temp_image_dir']

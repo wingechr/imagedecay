@@ -1,0 +1,1 @@
+python3 -m imagedecay.main i o --filterconf=v4.json --iter=10 --save_steps=1 --image_screen_ratio=0.9 --display_interval_s=1 --loglevel=warning --enable_cam
